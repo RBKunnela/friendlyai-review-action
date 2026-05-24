@@ -27,7 +27,7 @@ inputs:
   bypass-label:
     description: 'Deliberate soft-override label that bypasses validation.'
     required: false
-    default: 'friendlyai-review-bypass-acknowledged-by-maintainer'
+    default: 'friendlyai-bypass-ack-by-maintainer'
 
 outputs:
   conclusion:

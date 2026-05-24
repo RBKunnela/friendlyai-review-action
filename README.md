@@ -51,7 +51,7 @@ jobs:
 | `github-token` | no | `${{ github.token }}` | Token used to read PR files and post comments/check-runs. |
 | `max-diff-tokens` | no | `15000` | Approximate token budget for inline patches sent to the API. |
 | `request-timeout-seconds` | no | `120` | Timeout for the review API request. |
-| `bypass-label` | no | `friendlyai-review-bypass-acknowledged-by-maintainer` | Deliberate soft-override label that bypasses validation. |
+| `bypass-label` | no | `friendlyai-bypass-ack-by-maintainer` | Deliberate soft-override label that bypasses validation. |
 
 ## Outputs
 
@@ -189,7 +189,7 @@ Kept outside this repository:
 ## Bypass Label
 
 The `bypass-label` input defaults to
-`friendlyai-review-bypass-acknowledged-by-maintainer` and skips validation when
+`friendlyai-bypass-ack-by-maintainer` and skips validation when
 the label is present on the PR. This is a soft override:
 
 - The default label string is intentionally long and deliberate so it cannot be
