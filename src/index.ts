@@ -85,7 +85,7 @@ async function run(): Promise<void> {
     const timeoutSeconds = parsePositiveInt("request-timeout-seconds", 120);
     const bypassLabel =
       core.getInput("bypass-label") ||
-      "friendlyai-review-bypass-acknowledged-by-maintainer";
+      "friendlyai-bypass-ack-by-maintainer";
 
     if (!ghToken) {
       throw new Error(

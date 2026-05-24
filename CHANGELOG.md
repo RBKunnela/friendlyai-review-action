@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 - 2026-05-24
+
+- Shortened the default bypass label to
+  `friendlyai-bypass-ack-by-maintainer` so it fits GitHub's 50-character label
+  name limit while remaining deliberate and auditable.
+
 ## 1.0.1 - 2026-05-24
 
 - Made PR comment posting best-effort so repository token comment restrictions
