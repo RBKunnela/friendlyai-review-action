@@ -1,0 +1,46 @@
+name: 'FriendlyAI Review'
+description: 'Public GitHub Action wrapper that sends PR diffs to a private validation API and reports the returned verdict.'
+author: 'FriendlyAI'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  review-api-key:
+    description: 'API key for the private validation service. Provide via secrets.FRIENDLYAI_REVIEW_API_KEY.'
+    required: true
+  review-api-url:
+    description: 'Absolute URL of the private review endpoint.'
+    required: true
+  github-token:
+    description: 'GitHub token for reading PR files and posting comments/check-runs.'
+    required: false
+    default: ${{ github.token }}
+  max-diff-tokens:
+    description: 'Approximate max token budget for inline PR patches sent to the API.'
+    required: false
+    default: '15000'
+  request-timeout-seconds:
+    description: 'Timeout for the review API request.'
+    required: false
+    default: '120'
+  bypass-label:
+    description: 'Deliberate soft-override label that bypasses validation.'
+    required: false
+    default: 'friendlyai-review-bypass-acknowledged-by-maintainer'
+
+outputs:
+  conclusion:
+    description: 'Final check-run conclusion: success | failure | neutral.'
+  finding-count:
+    description: 'Number of findings returned by the review service.'
+  blocking-finding-count:
+    description: 'Number of medium/high/critical findings returned by the review service.'
+  max-risk:
+    description: 'Maximum risk level returned by the review service, when provided.'
+  report-url:
+    description: 'Optional report URL returned by the review service.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
