@@ -19,6 +19,21 @@ import {
 } from "./report";
 import { countBlockingFindings } from "./schema";
 
+async function tryPostOrUpdateComment(
+  args: Parameters<typeof postOrUpdateComment>[0],
+): Promise<string | undefined> {
+  try {
+    return await postOrUpdateComment(args);
+  } catch (err) {
+    core.warning(
+      `friendlyai-review: could not post/update PR comment: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return undefined;
+  }
+}
+
 async function actorIsCollaborator(
   githubClient: GitHubClient,
   owner: string,
@@ -141,7 +156,7 @@ async function run(): Promise<void> {
     }
 
     if (pr.isFork) {
-      await postOrUpdateComment({
+      await tryPostOrUpdateComment({
         githubClient,
         owner: pr.owner,
         repo: pr.repo,
@@ -169,7 +184,7 @@ async function run(): Promise<void> {
     }
 
     if (labels.includes(bypassLabel)) {
-      await postOrUpdateComment({
+      await tryPostOrUpdateComment({
         githubClient,
         owner: pr.owner,
         repo: pr.repo,
@@ -226,14 +241,16 @@ async function run(): Promise<void> {
       omittedFiles: prContext.omittedFiles,
     });
 
-    const commentUrl = await postOrUpdateComment({
+    const commentUrl = await tryPostOrUpdateComment({
       githubClient,
       owner: pr.owner,
       repo: pr.repo,
       prNumber: pr.number,
       body: commentBody,
     });
-    core.info(`friendlyai-review: comment posted/updated -> ${commentUrl}`);
+    if (commentUrl) {
+      core.info(`friendlyai-review: comment posted/updated -> ${commentUrl}`);
+    }
 
     const checkUrl = await postCheckRun({
       githubClient,

@@ -1,6 +1,6 @@
 {
   "name": "friendlyai-review-action",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "commonjs",
   "private": true,
   "description": "Public GitHub Action wrapper that sends PR diffs to a private validation API and reports the returned verdict.",

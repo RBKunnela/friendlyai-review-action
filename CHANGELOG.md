@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 - 2026-05-24
+
+- Made PR comment posting best-effort so repository token comment restrictions
+  do not prevent the `friendlyai/review` check-run from reporting the verdict.
+
 ## 1.0.0 - 2026-05-24
 
 - Converted the action into a public-safe wrapper around a private review API.
