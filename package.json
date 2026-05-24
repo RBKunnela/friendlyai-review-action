@@ -30,6 +30,10 @@
     "pull-request",
     "validation"
   ],
-  "license": "UNLICENSED",
-  "author": "FriendlyAI"
+  "license": "MIT",
+  "author": "FriendlyAI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RBKunnela/friendlyai-review-action.git"
+  }
 }
