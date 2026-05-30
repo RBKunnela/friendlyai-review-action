@@ -86,6 +86,17 @@ async function run(): Promise<void> {
     const bypassLabel =
       core.getInput("bypass-label") ||
       "friendlyai-bypass-ack-by-maintainer";
+    // Validate rather than silently coerce: a typo like "story-drivn" must FAIL
+    // loudly, not quietly downgrade a story-driven repo to standard.
+    const rawMethodology = (core.getInput("methodology") || "standard")
+      .trim()
+      .toLowerCase();
+    if (rawMethodology !== "standard" && rawMethodology !== "story-driven") {
+      throw new Error(
+        `Invalid 'methodology' input: "${rawMethodology}". Expected "standard" or "story-driven".`,
+      );
+    }
+    const methodology = rawMethodology as "standard" | "story-driven";
 
     if (!ghToken) {
       throw new Error(
@@ -223,6 +234,7 @@ async function run(): Promise<void> {
         workflow: process.env.GITHUB_WORKFLOW ?? "",
         actionRef: process.env.GITHUB_ACTION_REF ?? "",
       },
+      methodology,
     );
 
     const response = await requestReview({
@@ -239,6 +251,7 @@ async function run(): Promise<void> {
       fileCount: prContext.fileCount,
       truncated: prContext.truncated,
       omittedFiles: prContext.omittedFiles,
+      methodology,
     });
 
     const commentUrl = await tryPostOrUpdateComment({

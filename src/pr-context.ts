@@ -26,6 +26,7 @@ export interface ChangedFile {
 
 export interface ReviewRequest {
   version: "friendlyai.review.v1";
+  methodology: "standard" | "story-driven";
   repository: {
     owner: string;
     repo: string;
@@ -121,6 +122,7 @@ export async function buildReviewRequest(
   pr: PullRequestRef,
   maxDiffTokens: number,
   action: ActionMetadata,
+  methodology: "standard" | "story-driven",
 ): Promise<ReviewContext> {
   const files = await listAllPrFiles(githubClient, pr);
   const omittedFiles: string[] = [];
@@ -164,6 +166,7 @@ export async function buildReviewRequest(
   return {
     request: {
       version: "friendlyai.review.v1",
+      methodology,
       repository: {
         owner: pr.owner,
         repo: pr.repo,

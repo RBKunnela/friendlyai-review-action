@@ -28,6 +28,10 @@ inputs:
     description: 'Deliberate soft-override label that bypasses validation.'
     required: false
     default: 'friendlyai-bypass-ack-by-maintainer'
+  methodology:
+    description: 'Review methodology: "standard" (normal code review — default) or "story-driven" (adds linked-story and acceptance-criteria checks). Set "story-driven" only on repos that use a story-driven process.'
+    required: false
+    default: 'standard'
 
 outputs:
   conclusion:
