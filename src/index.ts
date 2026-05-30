@@ -244,6 +244,7 @@ async function run(): Promise<void> {
       fileCount: prContext.fileCount,
       truncated: prContext.truncated,
       omittedFiles: prContext.omittedFiles,
+      methodology,
     });
 
     const commentUrl = await tryPostOrUpdateComment({

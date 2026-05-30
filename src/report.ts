@@ -20,10 +20,11 @@ interface RenderCommentArgs {
   fileCount: number;
   truncated: boolean;
   omittedFiles: string[];
+  methodology: "standard" | "story-driven";
 }
 
 export function renderComment(args: RenderCommentArgs): string {
-  const { response, runUrl, fileCount, truncated, omittedFiles } = args;
+  const { response, runUrl, fileCount, truncated, omittedFiles, methodology } = args;
   const lines: string[] = [];
 
   lines.push(COMMENT_MARKER);
@@ -38,6 +39,7 @@ export function renderComment(args: RenderCommentArgs): string {
   lines.push("");
   lines.push("| Field | Value |");
   lines.push("|---|---|");
+  lines.push(`| Methodology | \`${methodology}\` |`);
   lines.push(`| Conclusion | \`${response.conclusion}\` |`);
   lines.push(`| Max risk | \`${response.maxRisk ?? "unknown"}\` |`);
   lines.push(`| Findings | ${response.findings.length} |`);
