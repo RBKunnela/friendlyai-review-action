@@ -86,6 +86,10 @@ async function run(): Promise<void> {
     const bypassLabel =
       core.getInput("bypass-label") ||
       "friendlyai-bypass-ack-by-maintainer";
+    const methodology: "standard" | "story-driven" =
+      core.getInput("methodology").trim().toLowerCase() === "story-driven"
+        ? "story-driven"
+        : "standard";
 
     if (!ghToken) {
       throw new Error(
@@ -223,6 +227,7 @@ async function run(): Promise<void> {
         workflow: process.env.GITHUB_WORKFLOW ?? "",
         actionRef: process.env.GITHUB_ACTION_REF ?? "",
       },
+      methodology,
     );
 
     const response = await requestReview({
