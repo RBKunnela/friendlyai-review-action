@@ -86,10 +86,17 @@ async function run(): Promise<void> {
     const bypassLabel =
       core.getInput("bypass-label") ||
       "friendlyai-bypass-ack-by-maintainer";
-    const methodology: "standard" | "story-driven" =
-      core.getInput("methodology").trim().toLowerCase() === "story-driven"
-        ? "story-driven"
-        : "standard";
+    // Validate rather than silently coerce: a typo like "story-drivn" must FAIL
+    // loudly, not quietly downgrade a story-driven repo to standard.
+    const rawMethodology = (core.getInput("methodology") || "standard")
+      .trim()
+      .toLowerCase();
+    if (rawMethodology !== "standard" && rawMethodology !== "story-driven") {
+      throw new Error(
+        `Invalid 'methodology' input: "${rawMethodology}". Expected "standard" or "story-driven".`,
+      );
+    }
+    const methodology = rawMethodology as "standard" | "story-driven";
 
     if (!ghToken) {
       throw new Error(
