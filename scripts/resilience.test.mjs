@@ -19,11 +19,16 @@ import test from "node:test";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const outDir = mkdtempSync(join(tmpdir(), "fai-resilience-"));
+// Compile into a temp dir *inside the repo* (not the OS tmpdir). The compiled
+// schema.js does `require("zod")`, and Node resolves bare specifiers by walking
+// parent directories looking for node_modules. From the OS tmpdir that walk
+// never reaches the repo's node_modules (zod not found → MODULE_NOT_FOUND on
+// CI). A repo-local temp dir resolves against the repo's installed deps.
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const outDir = mkdtempSync(join(repoRoot, "node_modules", ".fai-resilience-"));
 
 // Compile the modules under test to CommonJS so Node resolves the extensionless
 // relative imports (`./schema`) that TS does not rewrite. We invoke the local
