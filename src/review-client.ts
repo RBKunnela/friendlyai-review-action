@@ -39,7 +39,9 @@ export type ReviewResult =
  */
 function looksLikeCreditExhaustion(status: number, bodyText: string): boolean {
   if (status === 402 || status === 429) return true;
-  const haystack = bodyText.toLowerCase();
+  // Bound the scan: quota/billing markers appear near the top of error bodies,
+  // and a multi-MB HTML error page should not drive a full-body lowercasing.
+  const haystack = bodyText.slice(0, 2000).toLowerCase();
   return (
     haystack.includes("insufficient_quota") ||
     haystack.includes("out of credits") ||
@@ -101,7 +103,20 @@ export async function requestReview(
       return { ok: false, kind: "upstream", message: `Review API request failed: ${msg}` };
     }
 
-    const bodyText = await response.text();
+    // Reading the body can itself reject (socket reset mid-stream, decompression
+    // error). A throw here would crash the action — the exact red-X we are trying
+    // to avoid — so treat an unreadable body as an upstream-unavailable signal.
+    let bodyText: string;
+    try {
+      bodyText = await response.text();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        ok: false,
+        kind: "upstream",
+        message: `Review API response body could not be read: ${msg}`,
+      };
+    }
 
     if (!response.ok) {
       const detail = bodyText ? ` Response: ${bodyText.slice(0, 500)}` : "";

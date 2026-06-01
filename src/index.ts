@@ -292,6 +292,11 @@ async function run(): Promise<void> {
     if (!reviewResult.ok) {
       const copy = unavailableCheckCopy(reviewResult.kind, bypassLabel);
       core.warning(`friendlyai-review: ${reviewResult.message}`);
+      // The fail-open guarantee must hold even if GitHub API calls here throw
+      // (rate limit, transient 5xx). tryPostOrUpdateComment already swallows its
+      // own errors; postCheckRun can throw, so guard it — a failed neutral-check
+      // post must never escalate into a red crash. The conclusion output is the
+      // authoritative neutral signal regardless of whether the check run posts.
       await tryPostOrUpdateComment({
         githubClient,
         owner: pr.owner,
@@ -305,15 +310,22 @@ async function run(): Promise<void> {
           copy.summary,
         ].join("\n"),
       });
-      await postCheckRun({
-        githubClient,
-        owner: pr.owner,
-        repo: pr.repo,
-        headSha: pr.headSha,
-        conclusion: "neutral",
-        title: copy.title,
-        summary: copy.summary,
-      });
+      try {
+        await postCheckRun({
+          githubClient,
+          owner: pr.owner,
+          repo: pr.repo,
+          headSha: pr.headSha,
+          conclusion: "neutral",
+          title: copy.title,
+          summary: copy.summary,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        core.warning(
+          `friendlyai-review: could not post neutral check run (continuing fail-open): ${msg}`,
+        );
+      }
       core.setOutput("conclusion", "neutral");
       core.setOutput("unavailable-reason", reviewResult.kind);
       return;
