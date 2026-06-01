@@ -1,6 +1,6 @@
 {
   "name": "friendlyai-review-action",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "type": "commonjs",
   "private": true,
   "description": "Public GitHub Action wrapper that sends PR diffs to a private validation API and reports the returned verdict.",
@@ -10,7 +10,7 @@
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "lint": "npm run typecheck",
-    "test": "node scripts/verify-public-surface.mjs"
+    "test": "node --test scripts/resilience.test.mjs && node scripts/verify-public-surface.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

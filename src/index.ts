@@ -9,7 +9,7 @@
 import * as core from "./action-core";
 import { GitHubClient } from "./github-client";
 import { getGitHubContext } from "./github-context";
-import { requestReview } from "./review-client";
+import { requestReview, type ReviewUnavailableKind } from "./review-client";
 import { buildReviewRequest, type PullRequestRef } from "./pr-context";
 import {
   COMMENT_MARKER,
@@ -54,6 +54,48 @@ async function actorIsCollaborator(
       }`,
     );
     return false;
+  }
+}
+
+/**
+ * Maps a reviewer-unavailable reason to a neutral check-run title + summary.
+ *
+ * The reviewer is a best-effort governance gate. When it cannot produce a
+ * trustworthy verdict (out of credits, timeout, upstream error, malformed
+ * response) we fail OPEN: the check is `neutral`, never red. Every message
+ * points the maintainer at the bypass label for a documented soft override.
+ *
+ * @param kind - Why the review was unavailable.
+ * @param bypassLabel - The configured maintainer bypass label.
+ * @returns A title (check-run header) and a summary (check-run body).
+ */
+function unavailableCheckCopy(
+  kind: ReviewUnavailableKind,
+  bypassLabel: string,
+): { title: string; summary: string } {
+  const ack = `If this PR needs to merge while review is unavailable, a maintainer can apply the \`${bypassLabel}\` label as a documented soft override.`;
+  switch (kind) {
+    case "credits":
+      return {
+        title: "FriendlyAI review unavailable — credits/quota",
+        summary: `The review service is out of LLM credits or hit a provider quota, so no verdict was produced. This is a neutral result, not a block. ${ack}`,
+      };
+    case "timeout":
+      return {
+        title: "FriendlyAI review unavailable — timeout",
+        summary: `The review service did not respond within the configured timeout, so no verdict was produced. This is a neutral result, not a block. ${ack}`,
+      };
+    case "malformed":
+      return {
+        title: "FriendlyAI review unavailable — malformed response",
+        summary: `The review service returned a response the action could not interpret, so no verdict was produced. This is a neutral result, not a block. ${ack}`,
+      };
+    case "upstream":
+    default:
+      return {
+        title: "FriendlyAI review unavailable — upstream error",
+        summary: `The review service returned an error, so no verdict was produced. This is a neutral result, not a block. ${ack}`,
+      };
   }
 }
 
@@ -237,12 +279,59 @@ async function run(): Promise<void> {
       methodology,
     );
 
-    const response = await requestReview({
+    const reviewResult = await requestReview({
       apiUrl: reviewApiUrl,
       apiKey: reviewApiKey,
       timeoutMs: timeoutSeconds * 1000,
       request: prContext.request,
     });
+
+    // Fail OPEN: a reviewer that cannot produce a trustworthy verdict (out of
+    // credits, timeout, upstream error, malformed body) emits a NEUTRAL check
+    // and defers to the maintainer — it does NOT block every PR with a red X.
+    if (!reviewResult.ok) {
+      const copy = unavailableCheckCopy(reviewResult.kind, bypassLabel);
+      core.warning(`friendlyai-review: ${reviewResult.message}`);
+      // The fail-open guarantee must hold even if GitHub API calls here throw
+      // (rate limit, transient 5xx). tryPostOrUpdateComment already swallows its
+      // own errors; postCheckRun can throw, so guard it — a failed neutral-check
+      // post must never escalate into a red crash. The conclusion output is the
+      // authoritative neutral signal regardless of whether the check run posts.
+      await tryPostOrUpdateComment({
+        githubClient,
+        owner: pr.owner,
+        repo: pr.repo,
+        prNumber: pr.number,
+        body: [
+          COMMENT_MARKER,
+          "",
+          `## ${copy.title}`,
+          "",
+          copy.summary,
+        ].join("\n"),
+      });
+      try {
+        await postCheckRun({
+          githubClient,
+          owner: pr.owner,
+          repo: pr.repo,
+          headSha: pr.headSha,
+          conclusion: "neutral",
+          title: copy.title,
+          summary: copy.summary,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        core.warning(
+          `friendlyai-review: could not post neutral check run (continuing fail-open): ${msg}`,
+        );
+      }
+      core.setOutput("conclusion", "neutral");
+      core.setOutput("unavailable-reason", reviewResult.kind);
+      return;
+    }
+
+    const response = reviewResult.response;
 
     const runUrl = `https://github.com/${pr.owner}/${pr.repo}/actions/runs/${context.runId}`;
     const commentBody = renderComment({
