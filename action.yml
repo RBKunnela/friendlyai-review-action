@@ -44,6 +44,8 @@ outputs:
     description: 'Maximum risk level returned by the review service, when provided.'
   report-url:
     description: 'Optional report URL returned by the review service.'
+  unavailable-reason:
+    description: 'Set when the review could not run and the check failed open to neutral: credits | timeout | upstream | malformed.'
 
 runs:
   using: 'node20'
